@@ -18,6 +18,7 @@ from orbit_backend.main import create_app
 def isolate_settings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Keep configuration tests independent of local credentials and dotenv files."""
     monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("APP_ENV", raising=False)
     monkeypatch.delenv("SUPABASE_URL", raising=False)
     monkeypatch.delenv("SUPABASE_KEY", raising=False)
 
@@ -25,11 +26,13 @@ def isolate_settings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
 def test_settings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Environment overrides dotenv values, and credentials are redacted."""
     monkeypatch.chdir(tmp_path)
-    Path(".env").write_text("SUPABASE_URL=https://dotenv.supabase.co\nSUPABASE_KEY=dotenv-key\n")
-    monkeypatch.setenv("SUPABASE_URL", "https://environment.supabase.co")
+    Path(".env.development").write_text(
+        "SUPABASE_URL=https://dotenv.supabase.co\nSUPABASE_KEY=dotenv-key\n"
+    )
+    monkeypatch.setenv("SUPABASE_URL", "http://localhost:54321")
     monkeypatch.setenv("SUPABASE_KEY", "environment-key")
     settings = get_settings()
-    assert str(settings.supabase_url) == "https://environment.supabase.co/"
+    assert str(settings.supabase_url) == "http://localhost:54321/"
     assert settings.supabase_key is not None
     assert settings.supabase_key.get_secret_value() == "environment-key"
     assert "environment-key" not in repr(settings)

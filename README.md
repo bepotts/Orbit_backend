@@ -13,6 +13,8 @@ make dev
 
 uv manages the Python environment and dependencies; no manual activation is needed.
 The development server listens at http://127.0.0.1:8000 and reloads on changes.
+Docker and the Supabase CLI must be installed and running. `make dev` starts the
+local stack and refreshes the ignored `.env.development` file automatically.
 Interactive documentation is available at `/docs`, with OpenAPI JSON at `/openapi.json`.
 
 ```sh
@@ -54,19 +56,45 @@ Add feature-specific routers and models as the API grows.
 
 ## Serving
 
-`make serve` binds to `0.0.0.0:8000` without development reload. For an installed
+`make serve` selects production and binds to `0.0.0.0:8000` without development reload. For an installed
 production environment use `uv sync --locked --no-dev`, then
-`uv run --no-dev uvicorn orbit_backend.main:create_app --factory --host 0.0.0.0 --port 8000`.
+`APP_ENV=production uv run --no-dev uvicorn orbit_backend.main:create_app --factory --host 0.0.0.0 --port 8000`.
 Configure HTTPS and access controls at deployment before adding private data or
 exposing protected operations. The health and echo endpoints run without Supabase credentials. Keep credentials out of version control.
 
 ## Supabase
 
 The official async Python SDK is installed and pinned in `pyproject.toml` and
-`uv.lock`. Copy `.env.example` to `.env`, then set `SUPABASE_URL` and
-`SUPABASE_KEY` from your project's Connect dialog. Environment variables override
-`.env`. The key is redacted in settings representations; `.env` is Git-ignored.
+`uv.lock`. Development (the default `APP_ENV=development`) reads only
+`.env.development`, generated from your running local Supabase stack. Production
+(`APP_ENV=production`) reads only `.env` or deployment environment variables.
+For production, copy `.env.example` to `.env` and set `SUPABASE_URL` and
+`SUPABASE_KEY` from your hosted project's Connect dialog. Environment variables
+override the selected dotenv file. Both dotenv files are Git-ignored.
 
 Use a publishable key for operations governed by Row Level Security (RLS).
 Secret/service-role keys bypass RLS: keep them server-only and use them only in
 explicitly authorized admin operations. No privileged key is needed for this setup.
+
+
+## Local development versus production
+
+```sh
+make dev              # Start local Supabase, refresh .env.development, run with reload
+make supabase-env     # Refresh only the local credentials file
+make supabase-stop    # Stop local containers, preserving database volumes
+make serve            # Run against hosted Supabase using .env or deployment variables
+```
+
+Local Supabase API: `http://127.0.0.1:54321`; Studio: `http://127.0.0.1:54323`;
+email inbox: `http://127.0.0.1:54324`. Local users and data are separate from the
+hosted project. The existing `supabase/config.toml` controls your local stack.
+The credential setup script uses the local publishable key (or anon compatibility
+key) and never copies the service-role key. It preserves your production `.env`.
+
+Startup rejects cloud URLs in development. Production requires an HTTPS
+`*.supabase.co` URL and a nonempty key, and never falls back to local Supabase.
+Missing production configuration fails startup. For deployment, set
+`APP_ENV=production`, `SUPABASE_URL`, and `SUPABASE_KEY` in the host's environment.
+If your shell already exports hosted Supabase variables, unset those while running
+`make dev` so they do not override `.env.development`.
