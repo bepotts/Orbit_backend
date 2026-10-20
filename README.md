@@ -58,5 +58,15 @@ Add feature-specific routers and models as the API grows.
 production environment use `uv sync --locked --no-dev`, then
 `uv run --no-dev uvicorn orbit_backend.main:create_app --factory --host 0.0.0.0 --port 8000`.
 Configure HTTPS and access controls at deployment before adding private data or
-exposing protected operations. No database, authentication, or external API key
-is required for this starter. Keep credentials out of version control.
+exposing protected operations. The health and echo endpoints run without Supabase credentials. Keep credentials out of version control.
+
+## Supabase
+
+The official async Python SDK is installed and pinned in `pyproject.toml` and
+`uv.lock`. Copy `.env.example` to `.env`, then set `SUPABASE_URL` and
+`SUPABASE_KEY` from your project's Connect dialog. Environment variables override
+`.env`. The key is redacted in settings representations; `.env` is Git-ignored.
+
+Use a publishable key for operations governed by Row Level Security (RLS).
+Secret/service-role keys bypass RLS: keep them server-only and use them only in
+explicitly authorized admin operations. No privileged key is needed for this setup.

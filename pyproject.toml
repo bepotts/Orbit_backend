@@ -8,11 +8,16 @@ version = "0.1.0"
 description = "HTTP API for Orbit"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = ["fastapi>=0.115,<1", "uvicorn[standard]>=0.34,<1"]
+dependencies = [
+    "fastapi>=0.115,<1",
+    "httpx>=0.28.1,<1",
+    "pydantic-settings>=2.16.0",
+    "supabase==2.33.0",
+    "uvicorn[standard]>=0.34,<1",
+]
 
 [dependency-groups]
 dev = [
-    "httpx>=0.28,<1",
     "mypy>=1.15,<2",
     "pre-commit>=4,<5",
     "pytest>=8,<10",
