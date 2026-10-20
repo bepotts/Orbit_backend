@@ -5,13 +5,15 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from orbit_backend.controllers.users import router as users_router
-from orbit_backend.models import HealthResponse, Message
+from orbit_backend.middleware.http_logging import HTTPLoggingMiddleware
+from orbit_backend.models import HealthResponse
 
 
 def create_app() -> FastAPI:
     """Create an independent application instance for serving or testing."""
     app = FastAPI(title="Orbit API", version="0.1.0")
 
+    app.add_middleware(HTTPLoggingMiddleware)
     app.include_router(users_router)
 
     @app.exception_handler(RequestValidationError)
@@ -32,10 +34,5 @@ def create_app() -> FastAPI:
     async def health() -> HealthResponse:
         """Report whether the HTTP service is alive."""
         return HealthResponse()
-
-    @app.post("/api/v1/echo", tags=["examples"])
-    async def echo(payload: Message) -> Message:
-        """Validate and return a JSON message without storing it."""
-        return payload
 
     return app
