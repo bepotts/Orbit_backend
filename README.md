@@ -33,7 +33,7 @@ requests receive HTTP 422. The echo endpoint is an example and stores no data.
 - **uv** manages dependencies, the virtual environment, packaging, and `uv.lock`.
 - **Ruff** checks imports and code quality and formats Python files.
 - **mypy** checks application and test types in strict mode.
-- **pytest + HTTPX** test the API; **pytest-cov** enforces 100% branch/line coverage.
+- **pytest + HTTPX2** test the API; **pytest-cov** enforces 100% branch/line coverage.
 - **pre-commit** runs Ruff and mypy before commits when installed.
 - **GitHub Actions** runs quality checks, tests, and a package build on pushes and PRs.
 
