@@ -37,6 +37,10 @@ line-length = 100
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
 
+[tool.ruff.lint.isort]
+# The local Supabase CLI directory must not change SDK import classification.
+known-third-party = ["supabase"]
+
 [tool.mypy]
 python_version = "3.13"
 strict = true
