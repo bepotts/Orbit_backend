@@ -1,4 +1,4 @@
-.PHONY: setup dev serve format lint typecheck test check hooks supabase-start supabase-env supabase-stop
+.PHONY: test-db setup dev serve format lint typecheck test check hooks supabase-start supabase-env supabase-stop
 setup:
 	uv sync --locked
 
@@ -36,3 +36,7 @@ supabase-env:
 
 supabase-stop:
 	supabase stop
+
+# SQL constraints and ownership policies; requires the running local Supabase stack.
+test-db:
+	supabase test db --local
