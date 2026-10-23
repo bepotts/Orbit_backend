@@ -8,11 +8,18 @@ version = "0.1.0"
 description = "HTTP API for Orbit"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = ["fastapi>=0.115,<1", "uvicorn[standard]>=0.34,<1"]
+dependencies = [
+    "fastapi>=0.115,<1",
+    "httpx>=0.28.1,<1",
+    "pydantic-settings>=2.16.0",
+    "pydantic[email]>=2.14.1,<3",
+    "supabase==2.33.0",
+    "uvicorn[standard]>=0.34,<1",
+]
 
 [dependency-groups]
 dev = [
-    "httpx>=0.28,<1",
+    "httpx2>=2.15.1",
     "mypy>=1.15,<2",
     "pre-commit>=4,<5",
     "pytest>=8,<10",
@@ -29,6 +36,10 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.ruff.lint.isort]
+# The local Supabase CLI directory must not change SDK import classification.
+known-third-party = ["supabase"]
 
 [tool.mypy]
 python_version = "3.13"

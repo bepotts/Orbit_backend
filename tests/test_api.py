@@ -22,44 +22,13 @@ def test_health(client: TestClient) -> None:
     assert response.json() == {"status": "ok"}
 
 
-def test_echo(client: TestClient) -> None:
-    """Valid input is trimmed and returned."""
-    response = client.post("/api/v1/echo", json={"message": " Hello, Orbit! "})
-    assert response.status_code == 200
-    assert response.json() == {"message": "Hello, Orbit!"}
-
-
-@pytest.mark.parametrize(
-    "payload",
-    [
-        {},
-        {"message": ""},
-        {"message": "   "},
-        {"message": "x" * 1001},
-        {"message": 42},
-        {"message": "hello", "unexpected": True},
-    ],
-)
-def test_echo_rejects_invalid_input(client: TestClient, payload: dict[str, object]) -> None:
-    """Missing, invalid, or extra fields produce validation errors."""
-    assert client.post("/api/v1/echo", json=payload).status_code == 422
-
-
-def test_malformed_json(client: TestClient) -> None:
-    """Malformed JSON produces a validation error."""
-    response = client.post(
-        "/api/v1/echo", content="{", headers={"Content-Type": "application/json"}
-    )
-    assert response.status_code == 422
-
-
 def test_unknown_route(client: TestClient) -> None:
     """Unknown paths produce a standard not-found response."""
     assert client.get("/missing").status_code == 404
 
 
 def test_openapi(client: TestClient) -> None:
-    """API documentation describes both initial endpoints."""
+    """API documentation describes the current health and user endpoints."""
     response = client.get("/openapi.json")
     assert response.status_code == 200
-    assert {"/health", "/api/v1/echo"} <= response.json()["paths"].keys()
+    assert {"/health", "/api/v1/users", "/api/v1/users/login"} <= response.json()["paths"].keys()
