@@ -8,6 +8,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from orbit_backend.config import get_settings
+from orbit_backend.controllers.sessions import router as sessions_router
 from orbit_backend.controllers.users import router as users_router
 from orbit_backend.middleware.http_logging import HTTPLoggingMiddleware
 from orbit_backend.models import HealthResponse
@@ -26,6 +27,7 @@ def create_app() -> FastAPI:
 
     app.add_middleware(HTTPLoggingMiddleware)
     app.include_router(users_router)
+    app.include_router(sessions_router)
 
     @app.exception_handler(RequestValidationError)
     async def validation_error_handler(
