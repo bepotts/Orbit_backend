@@ -62,6 +62,53 @@ production environment use `uv sync --locked --no-dev`, then
 Configure HTTPS and access controls at deployment before adding private data or
 exposing protected operations. The health and echo endpoints run without Supabase credentials. Keep credentials out of version control.
 
+## Docker
+
+Use `Dockerfile` for production and `Dockerfile.dev` for development. Run these
+commands from the backend directory.
+
+### Production
+
+```sh
+make docker-prod
+```
+
+Populate `.env` with your hosted `SUPABASE_URL` and `SUPABASE_KEY` first (see
+`.env.example`). The command builds the production image and runs it in the
+foreground with `APP_ENV=production`. Credentials are supplied at runtime
+and excluded from the build context. The container runs as a non-root user,
+installs only locked production dependencies, and checks `/health` automatically.
+The API is available at http://localhost:8000 and its documentation at `/docs`.
+This image runs the API; local Supabase is managed separately with the existing
+development commands.
+
+### Development
+
+```sh
+make docker-dev
+```
+
+The command starts local Supabase, refreshes `.env.development`, builds the
+development image, and runs the API in the foreground. Stop either API container
+with Ctrl+C; local Supabase keeps running until `make supabase-stop`.
+
+Host networking lets the API reach local Supabase at `127.0.0.1:54321` without
+changing the development URL checks. On Docker Desktop, enable host networking
+in Settings → Resources → Network first. Port publishing (`-p`) is unnecessary
+with host networking. The API listens at http://localhost:8000.
+
+The project mount supplies `.env.development` and reloads the API when files in
+`src` change. Development dependencies (including pytest, Ruff, and mypy) are
+installed in `/opt/venv`, separate from your host's `.venv`. After changing
+`pyproject.toml` or `uv.lock`, rebuild the image and restart the container.
+Run the tests inside the running development container with:
+
+```sh
+docker exec orbit-backend-dev uv run --locked pytest
+```
+
+The Supabase CLI runs on the host using the existing Make targets.
+
 ## Supabase
 
 The official async Python SDK is installed and pinned in `pyproject.toml` and

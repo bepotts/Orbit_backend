@@ -1,0 +1,15 @@
+# Only send the files needed to install the application to the builder.
+*
+!Dockerfile
+!Dockerfile.dev
+!.dockerignore
+!pyproject.toml
+!uv.lock
+!README.md
+!Makefile
+!tests/
+!tests/**
+!src/
+!src/**
+**/__pycache__/
+**/*.py[cod]
