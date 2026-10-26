@@ -1,6 +1,6 @@
 """Application factory and initial HTTP endpoints."""
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -10,12 +10,13 @@ from fastapi.responses import JSONResponse
 from orbit_backend.config import get_settings
 from orbit_backend.controllers.sessions import router as sessions_router
 from orbit_backend.controllers.users import router as users_router
+from orbit_backend.logging import configure_logging
 from orbit_backend.middleware.http_logging import HTTPLoggingMiddleware
 from orbit_backend.models import HealthResponse
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     """Validate environment configuration before accepting requests."""
     get_settings()
     yield
@@ -23,6 +24,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 def create_app() -> FastAPI:
     """Create an independent application instance for serving or testing."""
+    settings = get_settings()
+    configure_logging(settings.app_env, settings.log_level)
     app = FastAPI(title="Orbit API", version="0.1.0", lifespan=lifespan)
 
     app.add_middleware(HTTPLoggingMiddleware)

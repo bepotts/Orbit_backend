@@ -145,3 +145,11 @@ Missing production configuration fails startup. For deployment, set
 `APP_ENV=production`, `SUPABASE_URL`, and `SUPABASE_KEY` in the host's environment.
 If your shell already exports hosted Supabase variables, unset those while running
 `make dev` so they do not override `.env.development`.
+
+### Logging
+
+All application logs use structlog. `APP_ENV=development` produces readable
+console output (colored on a terminal); `APP_ENV=production` produces one JSON
+object per line on stdout for log collectors. Both include UTC timestamps,
+logger names, and severity. Set `LOG_LEVEL` to `DEBUG`, `INFO` (default),
+`WARNING`, `ERROR`, or `CRITICAL` in the selected dotenv file or environment.

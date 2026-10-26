@@ -6,25 +6,28 @@ from typing import Literal
 from pydantic import HttpUrl, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from orbit_backend.utils.enums import Environment
+
 
 class Settings(BaseSettings):
     """Load Supabase configuration for the selected application environment."""
 
     model_config = SettingsConfigDict(extra="ignore", env_ignore_empty=True)
 
-    app_env: Literal["development", "production"] = "development"
+    app_env: Environment = Environment.DEVELOPMENT
+    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     supabase_url: HttpUrl | None = None
     supabase_key: SecretStr | None = None
 
 
 def get_settings() -> Settings:
     """Select isolated dotenv files and prevent cross-environment Supabase connections."""
-    environment = os.environ.get("APP_ENV", "development")
+    environment = Environment(os.environ.get("APP_ENV", Environment.DEVELOPMENT))
     settings = Settings(
-        _env_file=".env" if environment == "production" else ".env.development",
+        _env_file=".env" if environment is Environment.PRODUCTION else ".env.development",
         app_env=environment,
     )
-    if settings.app_env == "production":
+    if settings.app_env is Environment.PRODUCTION:
         if settings.supabase_url is None or settings.supabase_key is None:
             raise ValueError("Production requires SUPABASE_URL and SUPABASE_KEY")
         if settings.supabase_url.scheme != "https" or not (

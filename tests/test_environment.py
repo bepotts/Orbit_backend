@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 
 from orbit_backend.config import get_settings
 from orbit_backend.main import create_app
+from orbit_backend.utils.enums import Environment
 
 
 @pytest.fixture(autouse=True)
@@ -22,18 +23,20 @@ def test_development_ignores_production_file() -> None:
     Path(".env").write_text("SUPABASE_URL=https://hosted.supabase.co\nSUPABASE_KEY=hosted-key\n")
     settings = get_settings()
     assert str(settings.supabase_url) == "http://127.0.0.1:54321/"
+    assert settings.app_env is Environment.DEVELOPMENT
     assert settings.supabase_key is None
 
 
 def test_production_ignores_development_file(monkeypatch: pytest.MonkeyPatch) -> None:
     """Production selects hosted credentials even when local credentials exist."""
-    monkeypatch.setenv("APP_ENV", "production")
+    monkeypatch.setenv("APP_ENV", Environment.PRODUCTION)
     Path(".env.development").write_text(
         "SUPABASE_URL=http://localhost:54321\nSUPABASE_KEY=local-key\n"
     )
     Path(".env").write_text("SUPABASE_URL=https://hosted.supabase.co\nSUPABASE_KEY=hosted-key\n")
     settings = get_settings()
     assert str(settings.supabase_url) == "https://hosted.supabase.co/"
+    assert settings.app_env is Environment.PRODUCTION
     assert settings.supabase_key is not None
     assert settings.supabase_key.get_secret_value() == "hosted-key"
     with TestClient(create_app()) as client:
@@ -54,7 +57,7 @@ def test_invalid_production_fails_at_startup(
     url: str | None, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Missing credentials and non-hosted URLs prevent production startup."""
-    monkeypatch.setenv("APP_ENV", "production")
+    monkeypatch.setenv("APP_ENV", Environment.PRODUCTION)
     monkeypatch.setenv("SUPABASE_KEY", "test-key")
     if url is not None:
         monkeypatch.setenv("SUPABASE_URL", url)
@@ -64,7 +67,7 @@ def test_invalid_production_fails_at_startup(
 
 def test_production_requires_key(monkeypatch: pytest.MonkeyPatch) -> None:
     """A hosted URL alone is insufficient for production."""
-    monkeypatch.setenv("APP_ENV", "production")
+    monkeypatch.setenv("APP_ENV", Environment.PRODUCTION)
     monkeypatch.setenv("SUPABASE_URL", "https://hosted.supabase.co")
     with pytest.raises(ValueError):
         get_settings()

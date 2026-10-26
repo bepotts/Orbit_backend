@@ -1,14 +1,14 @@
 """Bounded, credential-redacted HTTP request and response logging."""
 
 import json
-import logging
 from time import perf_counter
 from urllib.parse import parse_qsl
 from uuid import uuid4
 
+import structlog
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-logger = logging.getLogger("uvicorn.error.orbit.http")
+logger = structlog.stdlib.get_logger("orbit.http")
 MAX_BODY_BYTES = 16_384
 SENSITIVE_PARTS = ("password", "token", "secret", "authorization", "cookie", "apikey", "credential")
 
@@ -96,32 +96,20 @@ class HTTPLoggingMiddleware:
                 "path": scope["path"],
             }
             logger.info(
-                "%s",
-                json.dumps(
-                    {
-                        **common,
-                        "event": "http.request",
-                        "query": redact(
-                            dict(
-                                parse_qsl(
-                                    scope.get("query_string", b"").decode("utf-8", errors="replace")
-                                )
-                            )
-                        ),
-                        "payload": payload_for_log(request_body, request_size > MAX_BODY_BYTES),
-                    }
+                "http.request",
+                **common,
+                query=redact(
+                    dict(
+                        parse_qsl(scope.get("query_string", b"").decode("utf-8", errors="replace"))
+                    )
                 ),
+                payload=payload_for_log(request_body, request_size > MAX_BODY_BYTES),
             )
             logger.info(
-                "%s",
-                json.dumps(
-                    {
-                        **common,
-                        "event": "http.response",
-                        "status": status_code,
-                        "duration_ms": round((perf_counter() - started) * 1000, 2),
-                        "failed": failed,
-                        "payload": payload_for_log(response_body, response_size > MAX_BODY_BYTES),
-                    }
-                ),
+                "http.response",
+                **common,
+                status=status_code,
+                duration_ms=round((perf_counter() - started) * 1000, 2),
+                failed=failed,
+                payload=payload_for_log(response_body, response_size > MAX_BODY_BYTES),
             )

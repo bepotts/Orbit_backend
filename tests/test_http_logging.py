@@ -1,13 +1,13 @@
 """HTTP logging behavior, credential redaction, and streaming preservation."""
 
 import asyncio
-import json
 import logging
 
 import pytest
 from fastapi.testclient import TestClient
 from starlette.types import Message, Receive, Scope, Send
 
+from orbit_backend.logging import configure_logging
 from orbit_backend.main import create_app
 from orbit_backend.middleware.http_logging import (
     MAX_BODY_BYTES,
@@ -15,6 +15,7 @@ from orbit_backend.middleware.http_logging import (
     payload_for_log,
     redact,
 )
+from orbit_backend.utils.enums import Environment
 
 
 def test_redaction() -> None:
@@ -32,14 +33,15 @@ def test_unstructured_payload(body: bytes) -> None:
 
 def test_health_and_not_found(caplog: pytest.LogCaptureFixture) -> None:
     """Every HTTP exchange emits two correlated structured records."""
-    caplog.set_level(logging.INFO, logger="uvicorn.error.orbit.http")
+    configure_logging(Environment.DEVELOPMENT)
+    caplog.set_level(logging.INFO, logger="orbit.http")
     with TestClient(create_app()) as client:
         assert client.get("/health?access_token=hidden&name=Ada").status_code == 200
         assert client.get("/missing").status_code == 404
     entries = [
-        json.loads(record.message)
+        record.msg
         for record in caplog.records
-        if record.name.endswith("orbit.http")
+        if record.name.endswith("orbit.http") and isinstance(record.msg, dict)
     ]
     assert len(entries) == 4
     assert entries[0]["request_id"] == entries[1]["request_id"]
@@ -56,7 +58,8 @@ def test_health_and_not_found(caplog: pytest.LogCaptureFixture) -> None:
 )
 def test_asgi_messages(mode: str, caplog: pytest.LogCaptureFixture) -> None:
     """Streaming messages pass unchanged and failures still produce logging records."""
-    caplog.set_level(logging.INFO, logger="uvicorn.error.orbit.http")
+    configure_logging(Environment.DEVELOPMENT)
+    caplog.set_level(logging.INFO, logger="orbit.http")
     request_data = b'{"password":"hidden","first_name":"Ada"}'
     response_data = b'{"refresh_token":"hidden","ok":true}'
     if mode == "large":
@@ -101,9 +104,9 @@ def test_asgi_messages(mode: str, caplog: pytest.LogCaptureFixture) -> None:
     else:
         asyncio.run(run)
     entries = [
-        json.loads(record.message)
+        record.msg
         for record in caplog.records
-        if record.name.endswith("orbit.http")
+        if record.name.endswith("orbit.http") and isinstance(record.msg, dict)
     ]
     assert "hidden" not in caplog.text
     if mode == "websocket":
