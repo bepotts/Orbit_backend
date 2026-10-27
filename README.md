@@ -193,8 +193,12 @@ Pass additional options with `ACT_FLAGS`, for example:
 make act-check ACT_FLAGS="--verbose"
 ```
 
-`ACT` overrides the executable. Uploaded workflow artifacts are saved under
-`/tmp/Orbit_backend-act-artifacts`; override this with `ACT_ARTIFACT_DIR`.
+`ACT` overrides the executable. Package artifact uploads run only on GitHub;
+local `act` runs skip the upload because its artifact service does not support
+the configured upload action reliably. Formatting, lint, type analysis, tests,
+and package builds still run locally. The helpers configure an artifact server
+under `/tmp/Orbit_backend-act-artifacts` (`ACT_ARTIFACT_DIR`) for other compatible
+artifact steps.
 The commands use `--env-file /dev/null` so act does not automatically load the
 application's `.env`. Supply an explicit env file through `ACT_FLAGS` if needed.
 Local runs use your working tree; GitHub-hosted CI remains the final check for
