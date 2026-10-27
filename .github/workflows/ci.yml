@@ -1,15 +1,71 @@
-name: CI
-on: [push, pull_request]
+name: Backend CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
 permissions:
   contents: read
+
+concurrency:
+  group: backend-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
+    name: Python checks and package build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@v6
         with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v9
+        with:
+          version: "0.11.7"
           enable-cache: true
+          python-version: "3.13"
       - run: uv sync --locked
-      - run: make check
-      - run: uv build
+      - name: Check formatting
+        run: uv run ruff format --check .
+      - name: Lint
+        run: uv run ruff check .
+      - name: Static type analysis
+        run: make typecheck
+      - name: Test with coverage
+        run: make test
+      - run: uv build --no-sources
+      - uses: actions/upload-artifact@v6
+        with:
+          name: python-distributions
+          path: dist/
+          retention-days: 14
+
+  database:
+    name: Database migrations and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: supabase/setup-cli@v1
+        with:
+          version: "2.121.0"
+      - name: Apply migrations to a fresh local database
+        run: supabase db start
+      - run: make test-db
+      - name: Stop local database
+        if: always()
+        run: supabase stop --no-backup
+
+  docker:
+    name: Production Docker build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - run: docker build --tag orbit-backend:ci .

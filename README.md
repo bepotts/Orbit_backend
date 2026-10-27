@@ -153,3 +153,49 @@ console output (colored on a terminal); `APP_ENV=production` produces one JSON
 object per line on stdout for log collectors. Both include UTC timestamps,
 logger names, and severity. Set `LOG_LEVEL` to `DEBUG`, `INFO` (default),
 `WARNING`, `ERROR`, or `CRITICAL` in the selected dotenv file or environment.
+
+## Continuous integration
+
+[Backend CI](.github/workflows/ci.yml) runs on pushes, pull requests, and manual
+workflow dispatches. Independent jobs run `make check` with locked dependencies
+on Python 3.13, build source and wheel distributions, apply migrations to a fresh
+local Supabase database and run `make test-db`, and build the production Docker
+image. Distributions are downloadable as artifacts for 14 days. Database checks
+use an isolated local container and require no hosted Supabase credentials.
+The workflow validates builds without publishing images or deploying services.
+
+Formatting (`ruff format --check`), lint (`ruff check`), and static type analysis
+(`mypy` in strict mode) appear as separate required steps in Backend CI.
+
+### Run GitHub Actions locally
+
+Install [act](https://nektosact.com/installation/) to use the `make act*`
+commands (`brew install act` on macOS). Run these from this repository:
+
+```sh
+make act              # Run all CI jobs for a push
+make act-pr           # Run all CI jobs for a pull request
+make act-list         # List workflow jobs
+make act-dryrun       # Preview execution without running job steps
+make act-check        # Python formatting, lint, types, tests, and package build
+make act-database     # Database migrations and tests
+make act-docker       # Production Docker image build
+```
+
+Docker must be installed and running. Jobs use the
+`catthehacker/ubuntu:act-latest` Linux runner image, downloaded on first use.
+The database job starts and stops its own local Supabase containers; stop any
+existing local Supabase stack before running it to avoid port conflicts.
+
+Pass additional options with `ACT_FLAGS`, for example:
+
+```sh
+make act-check ACT_FLAGS="--verbose"
+```
+
+`ACT` overrides the executable. Uploaded workflow artifacts are saved under
+`/tmp/Orbit_backend-act-artifacts`; override this with `ACT_ARTIFACT_DIR`.
+The commands use `--env-file /dev/null` so act does not automatically load the
+application's `.env`. Supply an explicit env file through `ACT_FLAGS` if needed.
+Local runs use your working tree; GitHub-hosted CI remains the final check for
+runner and action compatibility.

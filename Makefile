@@ -54,3 +54,32 @@ supabase-stop:
 # SQL constraints and ownership policies; requires the running local Supabase stack.
 test-db:
 	supabase test db --local
+
+# Run the checked-in GitHub Actions workflow locally.
+ACT ?= act
+ACT_FLAGS ?=
+ACT_ARTIFACT_DIR ?= /tmp/Orbit_backend-act-artifacts
+ACT_OPTIONS = --workflows .github/workflows/ci.yml --env-file /dev/null --platform ubuntu-latest=catthehacker/ubuntu:act-latest --artifact-server-path "$(ACT_ARTIFACT_DIR)"
+
+.PHONY: act act-list act-dryrun act-pr act-check act-database act-docker
+
+act:
+	$(ACT) push $(ACT_OPTIONS) $(ACT_FLAGS)
+
+act-list:
+	$(ACT) --list $(ACT_OPTIONS) $(ACT_FLAGS)
+
+act-dryrun:
+	$(ACT) push --dryrun $(ACT_OPTIONS) $(ACT_FLAGS)
+
+act-pr:
+	$(ACT) pull_request $(ACT_OPTIONS) $(ACT_FLAGS)
+
+act-check:
+	$(ACT) push --job check $(ACT_OPTIONS) $(ACT_FLAGS)
+
+act-database:
+	$(ACT) push --job database $(ACT_OPTIONS) $(ACT_FLAGS)
+
+act-docker:
+	$(ACT) push --job docker $(ACT_OPTIONS) $(ACT_FLAGS)
